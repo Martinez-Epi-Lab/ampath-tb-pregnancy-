@@ -1,0 +1,26 @@
+#!/usr/bin/env Rscript
+args<-commandArgs(FALSE);this_file<-gsub('~+~',' ',sub('^--file=','',args[grepl('^--file=',args)][1]),fixed=TRUE)
+project <- dirname(dirname(normalizePath(this_file,mustWork=TRUE)));suppressPackageStartupMessages(library(data.table))
+for(f in c('stage_io.R','stage2_io.R','table1.R'))source(file.path(project,'R',f))
+ctx<-start_stage(project,'stage4_table1');check_core_versions(project);inputs<-outputs<-list()
+read_input<-function(stage,file,key){x<-stage2_input(ctx,stage,file);inputs[[key]]<<-x$fingerprint;x$data}
+c<-read_input('piece4','cohort.rds','cohort');p<-read_input('piece4','episodes.rds','episodes');b<-read_input('piece6','baseline_covariates.rds','baseline')
+cr<-read_input('piece5','cohort_pooled_primary.rds','cohort_person_time');sr<-read_input('piece5','sccs_pooled_primary.rds','sccs_person_time')
+ids<-unique(sr$patient_id);cohort<-table1_population(c,p,b,cr,design='cohort');sccs<-table1_population(c,p,b,sr,ids=ids,design='sccs')
+cohort[,primary_analysis_tb:=as.integer(patient_id %in% ids)];sccs[,primary_analysis_tb:=1L]
+statistics<-build_table1_statistics(cohort,sccs);formatted<-table1_formatted(statistics)
+outputs$cohort_characteristics.rds<-save_stage_rds(cohort,ctx$work,'cohort_characteristics.rds');outputs$sccs_characteristics.rds<-save_stage_rds(sccs,ctx$work,'sccs_characteristics.rds')
+fwrite(statistics,file.path(ctx$report,'table1_statistics.csv'));fwrite(formatted,file.path(ctx$report,'table1_formatted.csv'))
+table<-formatted[row_type!='column_header',.(characteristic,cohort,primary_sccs)]
+setnames(table,c('Characteristic',sprintf('Full cohort (N = %s)',format(nrow(cohort),big.mark=',',trim=TRUE)),sprintf('Primary SCCS (N = %s)',format(nrow(sccs),big.mark=',',trim=TRUE))))
+fwrite(table,file.path(ctx$report,'table1.csv'))
+oa<-read_input('piece2','audit.rds','observation_audit');pe<-read_input('piece3','pregnancy_eligible_observation.rds','pregnancy_eligible');ta<-read_input('piece4','audit.rds','TB_audit');ea<-read_input('piece5','event_audit.rds','event_audit')
+flow<-data.table(checkpoint=c('observation_all','observation_female','observation_men','pregnancy_eligible','TB_prior_treatment_excluded','TB_broad_evidence_excluded','final_cohort','incident_events','excluded_later_pregnancy_events','analyzed_events'),count=c(sum(oa$observation_status=='eligible_observation'),sum(oa$observation_status=='eligible_observation'&oa$male==0,na.rm=TRUE),sum(oa$observation_status=='eligible_observation'&oa$male==1,na.rm=TRUE),nrow(pe),sum(ta$cohort_status=='tb_treatment_prior_to_enrollment'),sum(ta$cohort_status=='tb_evidence_before_study_entry'),nrow(c),nrow(ea),sum(!ea$included_in_primary_analysis),sum(ea$included_in_primary_analysis)))
+setnames(flow,'checkpoint','key');fwrite(flow,file.path(ctx$report,'flow_counts.csv'))
+missing<-rbindlist(lapply(c('who','cd4','bmi','marital'),function(nm)rbindlist(lapply(c('cohort','sccs'),function(pop){x<-if(pop=='cohort')cohort else sccs;data.table(population=pop,variable=nm,missing=sum(is.na(x[[nm]])),denominator=nrow(x),percent=sum(is.na(x[[nm]]))/nrow(x)*100)}))))
+fwrite(missing,file.path(ctx$report,'table1_missingness.csv'))
+summary<-list(cohort=nrow(cohort),primary_sccs=nrow(sccs),statistics=nrow(statistics),formatted_rows=nrow(formatted),cohort_zero_contributing_pregnancies=sum(cohort$pregnancy_count==0),sccs_zero_contributing_pregnancies=sum(sccs$pregnancy_count==0),cohort_retained_person_days=sum(cr$days),sccs_retained_person_days=sum(sr$days),incident_events=sum(!is.na(c$event_date)),primary_events=sum(sr$events))
+stopifnot(summary$cohort==nrow(c),summary$primary_sccs==length(ids),summary$statistics==76L,summary$formatted_rows==52L)
+finish_stage(ctx,inputs,outputs,list(baseline='Most recent valid measurement in the specified baseline lookback windows; missing categories retained',pregnancies='First two documented episodes contributing pregnancy time within each design observation',cohort_time='FirstTB-censored retained time',SCCS_time='Full retained observation among primary cases'),summary,c('R/stage2_io.R','R/table1.R'),list(prior_TB_exclusions_applied=TRUE,TB_events_ascertained=TRUE,first_two_restriction_applied=TRUE))
+jsonlite::write_json(summary,file.path(ctx$report,'summary.json'),pretty=TRUE,auto_unbox=TRUE)
+message('Table1 generated from validated analysis inputs.')

@@ -1,0 +1,28 @@
+#!/usr/bin/env Rscript
+args <- commandArgs(FALSE)
+this_file <- gsub("~+~", " ", sub("^--file=", "", args[grepl("^--file=", args)][1]), fixed = TRUE)
+project <- dirname(dirname(normalizePath(this_file, mustWork = TRUE)))
+suppressPackageStartupMessages(library(data.table))
+for (f in c("stage_io.R", "stage2_io.R", "import_helpers.R", "pregnancy_outcomes.R")) source(file.path(project, "R", f))
+ctx <- start_stage(project, "stage2_outcomes"); check_core_versions(project)
+config <- commandArgs(TRUE)
+config <- if (length(config)) config[1] else file.path(project, "config/paths.local.R")
+cfg <- new.env(parent = baseenv()); sys.source(config, envir = cfg)
+if (!exists("ampath_outcome_path", envir = cfg, inherits = FALSE)) stop("Set ampath_outcome_path in config/paths.local.R.")
+outcome_path <- normalizePath(cfg$ampath_outcome_path, mustWork = TRUE)
+if (startsWith(outcome_path, paste0(normalizePath(ctx$work), "/")) || startsWith(outcome_path, paste0(normalizePath(ctx$report), "/"))) stop("Source outcome extract cannot be stored in output directories.")
+p <- stage2_input(ctx, "piece4", "episodes.rds")
+v <- stage2_input(ctx, "piece1", "visits.rds")
+message("Checking outcome extract keys and linking outcome records.")
+result <- derive_pregnancy_outcomes(p$data, v$data, outcome_path)
+outputs <- list()
+for (nm in c("outcomes", "assignments", "collapsed_evidence")) outputs[[paste0(nm, ".rds")]] <- save_stage_rds(result[[nm]], ctx$work, paste0(nm, ".rds"))
+o <- result$outcomes
+fwrite(o[, .(episodes = .N, women = uniqueN(patient_id)), by = primary90_vital_outcome], file.path(ctx$report, "outcome_categories.csv"))
+fwrite(o[, .(episodes = .N, women = uniqueN(patient_id)), by = .(documented_pregnancy_order, recorded = primary90_record_count > 0, recorded_live_birth)], file.path(ctx$report, "outcome_completeness.csv"))
+inputs <- list(episodes = p$fingerprint, visits = v$fingerprint, outcome_source = list(path = outcome_path, sha256 = result$aggregateQC$source_sha256))
+finish_stage(ctx, inputs, outputs, list(linkage_before_days = 30L, linkage_after_days = 180L, primary_adjudication_after_days = 90L,
+  linkage_endpoint = "Original pregnancy end", linkage_tie_order = c("Absolute distance", "After end preferred", "Pregnancy order")),
+  result$aggregateQC, c("R/stage2_io.R", "R/import_helpers.R", "R/pregnancy_outcomes.R"))
+jsonlite::write_json(result$aggregateQC, file.path(ctx$report, "summary.json"), pretty = TRUE, auto_unbox = TRUE)
+message("Outcome linkage complete: ", result$aggregateQC$recorded_live_birth_episodes, " recorded-live-birth episodes.")
