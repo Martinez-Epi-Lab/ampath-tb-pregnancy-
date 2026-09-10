@@ -3,8 +3,9 @@
 args <- commandArgs(FALSE)
 self <- gsub('~+~',' ',sub('^--file=','',args[grepl('^--file=',args)][1]),fixed=TRUE)
 project <- dirname(dirname(normalizePath(self,mustWork=TRUE)))
-files <- list.files(project,pattern='[.]R$',recursive=TRUE,full.names=TRUE)
-files <- files[!grepl('/(work|outputs|release)/',files)]
+files <- list.files(project,pattern='[.]R$',recursive=TRUE,full.names=FALSE)
+files <- file.path(project,files[!grepl('^(work|outputs|release)/',files)])
+if(!length(files))stop('No R source files found for syntax checks.')
 for(file in files)parse(file)
 suppressPackageStartupMessages(library(data.table))
 for(file in c('pipeline.R','import_helpers.R','eligibility_pregnancy.R','table1.R','manuscript_tables.R','share_checks.R'))source(file.path(project,'R',file))
