@@ -64,7 +64,7 @@ fit_cohort_poisson <- function(rows, variables = c("age", "calendar"), windowed 
   correction <- G / (G - 1) * (N - 1) / (N - P)
   covariance <- correction * bread %*% crossprod(cluster_scores) %*% bread
   result <- package_model(beta, covariance, information, crossprod(x, y - mu), rows,
-    "R stats::glm.fit Poisson; participant-clustered sandwich with original finite-sample correction",
+    "Poisson regression fitted with stats::glm.fit; participant-clustered sandwich covariance with finite-sample correction",
     fit$converged, fit$iter, sum(y * (log(days) + x %*% beta) - mu))
   result$diagnostics$finite_sample_correction <- correction
   result

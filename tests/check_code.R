@@ -37,7 +37,7 @@ check('Small counts remain exact',stat$count==1L&&stat$display=='1 (33.3%)')
 c[,primary_analysis_tb:=0L];s[,primary_analysis_tb:=1L]
 formatted<-table1_formatted(build_table1_statistics(c,s))
 check('Headings calculate population size',formatted$cohort[1]=='Full cohort (N = 2)'&&formatted$primary_sccs[1]=='Primary SCCS (N = 2)')
-# Exercise rejection paths in a disposable directory with fabricated content.
+# Test sharing checks with temporary files.
 scratch<-tempfile('share_check_');dir.create(scratch)
 tryCatch({
   writeLines(c('README.md','share-files.txt'),file.path(scratch,'share-files.txt'))

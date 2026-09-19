@@ -23,4 +23,4 @@ summary<-list(cohort=nrow(cohort),primary_sccs=nrow(sccs),statistics=nrow(statis
 stopifnot(summary$cohort==nrow(c),summary$primary_sccs==length(ids),summary$statistics==76L,summary$formatted_rows==52L)
 finish_stage(ctx,inputs,outputs,list(baseline='Most recent valid measurement in the specified baseline lookback windows; missing categories retained',pregnancies='First two documented episodes contributing pregnancy time within each design observation',cohort_time='FirstTB-censored retained time',SCCS_time='Full retained observation among primary cases'),summary,c('R/stage2_io.R','R/table1.R'),list(prior_TB_exclusions_applied=TRUE,TB_events_ascertained=TRUE,first_two_restriction_applied=TRUE))
 jsonlite::write_json(summary,file.path(ctx$report,'summary.json'),pretty=TRUE,auto_unbox=TRUE)
-message('Table1 generated from validated analysis inputs.')
+message('Table 1 generated.')

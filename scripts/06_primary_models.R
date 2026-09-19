@@ -13,7 +13,7 @@ v <- checked_input(project, "piece1", "visits.rds", p1$standardized_sha256$visit
 c <- checked_input(project, "piece4", "cohort.rds", p4$output_sha256$cohort.rds)
 stopifnot(identical(p5$inputs$cohort$sha256, c$fingerprint$sha256), identical(p4$inputs$visits$sha256, v$fingerprint$sha256))
 inputs <- list(visits = v$fingerprint, cohort = c$fingerprint)
-message("Piece 6: deriving baseline covariates and fitting manuscript models.")
+message("Step 6: deriving baseline covariates and fitting manuscript models.")
 baseline <- derive_baseline_covariates(v$data, c$data)
 outputs <- list(baseline_covariates.rds = save_stage_rds(baseline, ctx$work, "baseline_covariates.rds"))
 specs <- list(
@@ -60,8 +60,8 @@ summary <- list(model_fits = length(models), all_converged = all(vapply(models, 
   all_full_rank = all(vapply(models, function(m) m$diagnostics$information_rank == m$diagnostics$parameter_count, logical(1))),
   cohort_women = nrow(c$data), analyzed_events = models$cohort_primary$diagnostics$events,
   SCCS_cases = models$sccs_primary$diagnostics$analysis_n,
-  scope = "Primary pooled models; three cohort/two SCCS agreed models; six 30-day postpartum models for Table 2")
+  scope = "Two primary pooled models; five covariate-adjustment models; two models with six 30-day postpartum categories for Table 2")
 finish_stage(ctx, inputs, outputs, specs, summary, c("R/baseline_covariates.R", "R/models.R", "R/person_time.R"),
   list(prior_TB_exclusions_applied = TRUE, TB_events_ascertained = TRUE, first_two_restriction_applied = TRUE, models_fitted = TRUE))
 jsonlite::write_json(summary, file.path(ctx$report, "summary.json"), pretty = TRUE, auto_unbox = TRUE)
-message("Piece 6 complete: all ", length(models), " model fits passed numerical diagnostics.")
+message("Step 6 complete: all ", length(models), " model fits passed numerical diagnostics.")

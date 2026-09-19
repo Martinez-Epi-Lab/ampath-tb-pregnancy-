@@ -8,13 +8,13 @@ source(file.path(project, "R", "eligibility_pregnancy.R"))
 ctx <- start_stage(project, "piece3")
 p1 <- jsonlite::read_json(file.path(project, "outputs", "piece1", "run_manifest.json"))
 p2 <- jsonlite::read_json(file.path(project, "outputs", "piece2", "run_manifest.json"))
-message("Piece 3: checking inputs and reconstructing pregnancy episodes.")
+message("Step 3: checking inputs and reconstructing pregnancy episodes.")
 d <- checked_input(project, "piece1", "demographics.rds", p1$standardized_sha256$demographics)
 p <- checked_input(project, "piece1", "pregnancies.rds", p1$standardized_sha256$pregnancies)
 o <- checked_input(project, "piece2", "observation.rds", p2$output_sha256$observation.rds)
 if (!identical(p2$inputs$demographics$sha256, d$fingerprint$sha256) ||
   !identical(p2$inputs$visits$sha256, p1$standardized_sha256$visits))
-  stop("Piece 2 belongs to a different Piece 1 dataset version; rerun Piece 2.")
+  stop("Step 2 belongs to a different Step 1 dataset version; rerun Step 2.")
 rules <- study_rules()
 result <- clean_pregnancy_episodes(p$data, d$data, o$data, rules)
 inputs <- list(demographics = d$fingerprint, pregnancies = p$fingerprint, observation = o$fingerprint)
@@ -37,7 +37,7 @@ summary <- list(source_interval_rows = nrow(p$data), source_pregnancy_rows = sum
   one_day_clipped_episodes = sum(e$observed_pregnancy_days == 1L),
   total_observed_pregnancy_days = sum(e$observed_pregnancy_days),
   first_two_episodes_flagged = sum(e$first_two_documented),
-  note = "All cleaned pregnancy orders are retained. Prior TB exclusions, TB event ascertainment, and primary risk-set restrictions are later pieces.")
+  note = "All cleaned pregnancy orders are retained here. Prior-TB exclusions, TB event ascertainment, and primary risk-set restrictions are applied in subsequent steps.")
 manifest <- finish_stage(ctx, inputs, outputs, rules, summary)
 jsonlite::write_json(summary, file.path(ctx$report, "summary.json"), auto_unbox = TRUE, pretty = TRUE)
-message("Piece 3 complete: ", nrow(e), " cleaned episodes among ", nrow(result$pregnancy_eligible_observation), " women before prior-TB exclusions.")
+message("Step 3 complete: ", nrow(e), " cleaned episodes among ", nrow(result$pregnancy_eligible_observation), " women before prior-TB exclusions.")

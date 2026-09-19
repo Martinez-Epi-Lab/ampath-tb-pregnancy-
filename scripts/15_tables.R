@@ -34,7 +34,7 @@ for (id in names(tables)) {
 }
 fwrite(rbindlist(registry), file.path(ctx$report, "table_register.csv"))
 fwrite(rbindlist(cells), file.path(ctx$report, "table_cells.csv"))
-# Preserve all underlying scalar results in a machine-readable register.
+# Collect numeric results with their source rows and model labels.
 values <- list()
 for (key in setdiff(names(x), c("table1", "outcome_summary"))) {
   data <- x[[key]]

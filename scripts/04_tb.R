@@ -17,7 +17,7 @@ p2 <- jsonlite::read_json(file.path(project, "outputs/piece2/run_manifest.json")
 stopifnot(identical(p3$inputs$demographics$sha256, d$fingerprint$sha256),
   identical(p2$inputs$visits$sha256, v$fingerprint$sha256),
   identical(p3$inputs$observation$sha256, p2$output_sha256$observation.rds))
-message("Piece 4: extracting TB evidence and corroborating pairs.")
+message("Step 4: extracting TB evidence and corroborating pairs.")
 evidence <- extract_tb_evidence(v$data)
 tb <- ascertain_tb(evidence)
 result <- construct_tb_cohort(o$data, d$data, p$data, tb$dates)
@@ -35,4 +35,4 @@ finish_stage(ctx, list(demographics = d$fingerprint, visits = v$fingerprint, obs
   outputs, tb_rules(), summary, "R/tb_events.R",
   list(prior_TB_exclusions_applied = TRUE, TB_events_ascertained = TRUE))
 jsonlite::write_json(summary, file.path(ctx$report, "summary.json"), pretty = TRUE, auto_unbox = TRUE)
-message("Piece 4 complete: ", summary$final_cohort_women, " women; ", summary$incident_first_events_all_orders, " first TB events before the first-two restriction.")
+message("Step 4 complete: ", summary$final_cohort_women, " women; ", summary$incident_first_events_all_orders, " first TB events before the first-two restriction.")

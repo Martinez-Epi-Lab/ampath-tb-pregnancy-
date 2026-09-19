@@ -1,4 +1,4 @@
-# Publication figures generated from the validated aggregate analysis outputs.
+# Manuscript figures from aggregate analysis results.
 figure_palette <- function() c(reference='#E5E9EC',pregnancy='#28617A',postpartum='#80B8C5',excluded='#A7ADB3',cohort='#235B79',sccs='#9C514A',ink='#243440')
 
 save_manuscript_figure <- function(directory,name,width,height,draw) {

@@ -1,4 +1,4 @@
-# Audit the explicit list of files allowed in a code-only export.
+# Check files listed in share-files.txt before export.
 share_files <- function(project) {
   files <- readLines(file.path(project,'share-files.txt'),warn=FALSE)
   files <- files[nzchar(files)]

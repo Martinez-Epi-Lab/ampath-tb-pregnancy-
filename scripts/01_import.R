@@ -25,7 +25,7 @@ dir.create(reports, recursive = TRUE, showWarnings = FALSE)
 if (any(vapply(paths, function(p) startsWith(p, paste0(normalizePath(work), "/")) ||
   startsWith(p, paste0(normalizePath(reports), "/")), logical(1)))) stop("Inputs cannot be stored in output directories.")
 started <- format(Sys.time(), tz = "UTC", usetz = TRUE)
-message("Hashing immutable source files.")
+message("Calculating source-file SHA-256 hashes.")
 before_hash <- vapply(paths, digest::digest, character(1), algo = "sha256", file = TRUE)
 datasets <- list(); inventories <- list(); schemas <- list(); output_hashes <- list()
 schema <- import_schema()
@@ -56,7 +56,7 @@ stopifnot(identical(before_hash, after_hash))
 fwrite(inventory, file.path(reports, "dataset_inventory.csv"))
 fwrite(column_schema, file.path(reports, "column_audit.csv"), na = "")
 fwrite(linkage, file.path(reports, "linkage_audit.csv"))
-manifest <- list(stage = "Piece 1 import and standardization only", started_utc = started,
+manifest <- list(stage = "Step 1 import and standardization only", started_utc = started,
   completed_utc = format(Sys.time(), tz = "UTC", usetz = TRUE),
   source_files = lapply(names(paths), function(nm) list(dataset = nm, path = paths[[nm]],
     bytes = unname(file.info(paths[[nm]])$size), sha256_before = unname(before_hash[nm]),
@@ -70,17 +70,16 @@ manifest <- list(stage = "Piece 1 import and standardization only", started_utc 
     "All original source columns retained; source_row maps to original file row order.",
     "No patient IDs or individual values are included in aggregate validation tables.",
     "Calendar-invalid dates become NA with original date field retained in source_*.",
-    "Plausibility ranges, cohort inclusion, pregnancy cleaning, and TB definitions belong to later pieces."))
+    "Plausibility checks, cohort eligibility, pregnancy cleaning, and TB definitions are applied after import."))
 jsonlite::write_json(manifest, file.path(reports, "run_manifest.json"), pretty = TRUE, auto_unbox = TRUE, na = "null")
 writeLines(capture.output(sessionInfo()), file.path(reports, "sessionInfo.txt"))
-writeLines(c("# Piece 1 import summary", "", paste("Completed:", manifest$completed_utc), "",
+writeLines(c("# Step 1 import summary", "", paste("Completed:", manifest$completed_utc), "",
   "All source rows were retained. No cohort eligibility, TB, or pregnancy-cleaning rules were applied.",
   "Source SHA-256 hashes matched before and after import.", "",
   paste0("- ", inventory$dataset, ": ", format(inventory$rows, big.mark = ",", trim = TRUE),
     " rows; ", inventory$unique_ids, " unique nonmissing IDs; ", inventory$duplicate_source_rows,
     " duplicate source rows retained."), "",
   paste("Nonmissing cells converted to missing:", manifest$nonmissing_to_missing_cells),
-  "See column_audit.csv for exact per-column conversion and missingness counts and linkage_audit.csv for unmatched source records.",
-  "All reported import checks are calculated from the supplied inputs."),
+  "See column_audit.csv for exact per-column conversion and missingness counts and linkage_audit.csv for unmatched source records."),
   file.path(reports, "import_summary.md"))
-message("Piece 1 import complete. Aggregate reports: ", reports)
+message("Step 1 import complete. Aggregate reports: ", reports)

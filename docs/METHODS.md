@@ -2,7 +2,7 @@
 
 ## Observation, pregnancy, and TB
 
-The import preserves source rows and fields, standardizes identifiers and dates, and records missingness and conversion checks. Source clinical codes are not globally recoded as missing. Pregnancy-interval duration in the supplied SAS extract is measured in weeks. The field contract is defined in `R/import_helpers.R`.
+The import preserves source rows and fields, standardizes identifiers and dates, and records missingness and conversion checks. Source clinical codes are not globally recoded as missing. Pregnancy-interval duration in the supplied SAS extract is measured in weeks. Required fields are defined in `R/import_helpers.R`.
 
 `R/eligibility_pregnancy.R` defines observation within January 1, 2010–April 15, 2025, with a 90-day run-in and age limits of 15 and 50 years. It excludes invalid pregnancy intervals, truncates an earlier overlapping episode before the next pregnancy, removes episodes that collapse, assigns documented pregnancy order, and clips retained intervals to observation.
 
@@ -38,4 +38,4 @@ Uncertainty uses 5,000 woman-clustered bootstrap samples with seed 20260829. Sam
 
 `R/manuscript_tables.R` creates the manuscript layouts from regenerated aggregate estimates. It preserves the original Wilson–Hilferty approximation for Poisson incidence intervals and applies decimal half-up rounding at presentation. `R/manuscript_documents.R` writes editable Word tables and HTML from the same objects. `R/manuscript_figures.R` draws the illustrative design timeline, pooled-estimate forest plot, participant flow, and postpartum spline.
 
-All observed counts, estimates, intervals, and source-file hashes are computed locally. None are distributed as expected-answer fixtures. Input and intermediate hashes support local provenance and are excluded from code sharing.
+All observed counts, estimates, intervals, and source-file hashes are computed locally. The repository does not include reference results or source-file hashes. Input and intermediate hashes support local provenance and are excluded from code sharing.

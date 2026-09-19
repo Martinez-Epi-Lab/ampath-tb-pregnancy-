@@ -1,5 +1,5 @@
 #!/usr/bin/env Rscript
-# Run the manuscript analysis from source extracts to final artifacts.
+# Run the manuscript analysis from source extracts to tables and figures.
 args <- commandArgs(FALSE)
 self <- gsub('~+~',' ',sub('^--file=','',args[grepl('^--file=',args)][1]),fixed=TRUE)
 project <- dirname(normalizePath(self,mustWork=TRUE))
